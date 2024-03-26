@@ -1,27 +1,9 @@
+import { Address, BigInt, Bytes, log, store } from "@graphprotocol/graph-ts";
 import {
-  AdminChanged as AdminChangedEvent,
-  Approval as ApprovalEvent,
-  BeaconUpgraded as BeaconUpgradedEvent,
-  BridgeBurn as BridgeBurnEvent,
-  BridgeInitialize as BridgeInitializeEvent,
-  BridgeMint as BridgeMintEvent,
-  EIP712DomainChanged as EIP712DomainChangedEvent,
-  Initialized as InitializedEvent,
   Transfer as TransferEvent,
-  Upgraded as UpgradedEvent
 } from "../generated/l20/l20"
 import {
-  AdminChanged,
-  Approval,
-  BeaconUpgraded,
-  BridgeBurn,
-  BridgeInitialize,
-  BridgeMint,
-  EIP712DomainChanged,
-  Initialized,
-  Transfer,
-  Upgraded,
-  Point,
+  Point
 } from "../generated/schema"
 export const ETHER_ONE = BigInt.fromString("1000000000000000000");
 export const DENOMINATOR_number = 10000;
@@ -33,9 +15,9 @@ export const WBETH = "0x7F62B7a0A9848D5e261960Ff4B4009206aD00bd5".toLowerCase();
 export const SWETH = "0xBB68f4548A1c26B6611cbB8087c25A616eDd8569".toLowerCase();
 
 LST_PRICE_MAP.set(STETH, DENOMINATOR);
-LST_PRICE_MAP.set(METH, BigInt.fromI32(1.024 * DENOMINATOR_number));
-LST_PRICE_MAP.set(WBETH, BigInt.fromI32(1.033 * DENOMINATOR_number));
-LST_PRICE_MAP.set(SWETH, BigInt.fromI32(1.053 * DENOMINATOR_number));
+LST_PRICE_MAP.set(METH, BigInt.fromI32(1024 * DENOMINATOR_number).div(BigInt.fromI32(1000)));
+LST_PRICE_MAP.set(WBETH, BigInt.fromI32(1033 * DENOMINATOR_number).div(BigInt.fromI32(1000)));
+LST_PRICE_MAP.set(SWETH, BigInt.fromI32(1053 * DENOMINATOR_number).div(BigInt.fromI32(1000)));
 
 export const BIGINT_ZERO = BigInt.fromI32(0)
 export const BIGINT_ONE = BigInt.fromI32(1)
@@ -49,129 +31,16 @@ function toLowerCase(address: Bytes): Bytes {
   return Bytes.fromHexString(address.toHexString().toLowerCase());
 }
 
-export function handleAdminChanged(event: AdminChangedEvent): void {
-  let entity = new AdminChanged(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.previousAdmin = event.params.previousAdmin
-  entity.newAdmin = event.params.newAdmin
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
-
-export function handleApproval(event: ApprovalEvent): void {
-  let entity = new Approval(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.owner = event.params.owner
-  entity.spender = event.params.spender
-  entity.value = event.params.value
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
-
-export function handleBeaconUpgraded(event: BeaconUpgradedEvent): void {
-  let entity = new BeaconUpgraded(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.beacon = event.params.beacon
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
-
-export function handleBridgeBurn(event: BridgeBurnEvent): void {
-  let entity = new BridgeBurn(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity._account = event.params._account
-  entity._amount = event.params._amount
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
-
-export function handleBridgeInitialize(event: BridgeInitializeEvent): void {
-  let entity = new BridgeInitialize(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.l1Token = event.params.l1Token
-  entity.name = event.params.name
-  entity.symbol = event.params.symbol
-  entity.decimals = event.params.decimals
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
-
-export function handleBridgeMint(event: BridgeMintEvent): void {
-  let entity = new BridgeMint(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity._account = event.params._account
-  entity._amount = event.params._amount
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
-
-export function handleEIP712DomainChanged(
-  event: EIP712DomainChangedEvent
-): void {
-  let entity = new EIP712DomainChanged(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
-
-export function handleInitialized(event: InitializedEvent): void {
-  let entity = new Initialized(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.version = event.params.version
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
-
 export function handleTransfer(event: TransferEvent): void {
   const stakeToken = toLowerCase(event.address);
   const weight = LST_PRICE_MAP.get(stakeToken.toHexString().toLowerCase());
   const transferShares = event.params.value;
   const from = toLowerCase(event.params.from);
   const to = toLowerCase(event.params.to);
-  const timestamp = BigInt.fromI32(event.block.timestamp);
+  const timestamp = event.block.timestamp;
 
-  const weightTransferShares = transferShares.mul(weight).div(DENOMINATOR);
-  const increase = timestamp.mul(weightTransferShares);
+  const weightTransferShares = transferShares.times(weight).div(DENOMINATOR);
+  const increase = timestamp.times(weightTransferShares);
   // process for sender
   if (from.notEqual(ADDRESS_ZERO)) {
     // burn or transfer to others
@@ -206,16 +75,3 @@ function loadOrCreatePoint(address: Bytes): Point {
   return point;
 }
 
-
-export function handleUpgraded(event: UpgradedEvent): void {
-  let entity = new Upgraded(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.implementation = event.params.implementation
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
