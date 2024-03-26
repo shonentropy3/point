@@ -84,7 +84,8 @@ type Point @entity {
   id: Bytes! # hash(address)
   balance: BigInt!
   address: Bytes!
-  timeWeightAmount: BigInt!
+  timeWeightAmountIn: BigInt!
+  timeWeightAmountOut: BigInt!
 }
 
 type Upgraded @entity(immutable: true) {
